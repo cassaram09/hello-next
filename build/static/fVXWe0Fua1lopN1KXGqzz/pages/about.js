@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[4],{"3XHS":function(n,t,u){"use strict";u.r(t),u.d(t,"default",(function(){return o}));var e=u("q1tI"),i=u.n(e).a.createElement;function o(){return i("div",null,i("p",null,"This is the about page"))}},rB5V:function(n,t,u){(window.__NEXT_P=window.__NEXT_P||[]).push(["/about",function(){return u("3XHS")}])}},[["rB5V",0,1]]]);
