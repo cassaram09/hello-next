@@ -2,7 +2,6 @@ import Link from "next/link";
 import axios from "axios";
 
 const Index = props => {
-  console.log(props);
   return (
     <div>
       <Link href="/about">
@@ -14,11 +13,16 @@ const Index = props => {
 };
 
 Index.getInitialProps = async function() {
-  const res = await axios.get("http://localhost:3000/api/content");
+  try {
+    const res = await axios.get("http://localhost:3000/api/content");
 
-  return {
-    content: res.data
-  };
+    return {
+      content: res.data
+    };
+  } catch (e) {
+    console.log(e);
+    return { content: [] };
+  }
 };
 
 export default Index;

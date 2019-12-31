@@ -1,14 +1,16 @@
 const Sequelize = require("sequelize");
 const fs = require("fs");
 const path = require("path");
-const basename = path.basename(__filename);
+
+const env = process.env.NODE_ENV || "development";
+const config = require("./config/config.json")[env];
 
 class Database {
   /**
    * Inistatiates the DB class
    *
    */
-  constructor(config) {
+  constructor() {
     this.config = config;
     this.Sequelize = Sequelize;
     this.connection = undefined;
@@ -48,7 +50,9 @@ class Database {
 
   importModels() {
     const models = fs.readdirSync(this.modelsDirectory).reduce((sum, file) => {
-      const model = this.connection["import"](path.join(modelsDirectory, file));
+      const model = this.connection["import"](
+        path.join(this.modelsDirectory, file)
+      );
 
       sum[model.name] = model;
 
