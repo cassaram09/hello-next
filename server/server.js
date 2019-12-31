@@ -1,6 +1,6 @@
 const express = require("express");
 const next = require("next");
-
+const bodyParser = require("body-parser");
 const env = process.env.NODE_ENV || "development";
 const dev = env !== "production";
 
@@ -13,18 +13,45 @@ class Server {
 
     this.models = this.database.models;
 
-    this.createRoutes = this.createRoutes.bind(this);
+    this.initializeRoutes = this.initializeRoutes.bind(this);
+    this.initializeMiddleware = this.initializeMiddleware.bind(this);
     this.start = this.start.bind(this);
 
     return this;
   }
-
-  createRoutes() {
+  initializeMiddleware() {
     return new Promise(async (resolve, reject) => {
       try {
-        this.server.get("/api/content", async (req, res) => {
+        this.server.use(bodyParser.json()); // Prases incoming data as JSON
+
+        resolve();
+      } catch (e) {
+        console.log(e);
+        reject(e);
+      }
+    });
+  }
+
+  initializeRoutes() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.server.get("/api/posts", async (req, res) => {
           const posts = await this.models.Post.findAll();
           res.send(JSON.stringify(posts));
+        });
+
+        this.server.get("/api/posts/:id", async (req, res) => {
+          console.log(req.params);
+          const post = await this.models.Post.findByPk(req.params.id);
+          res.send(post);
+        });
+
+        this.server.post("/api/posts", async (req, res) => {
+          const data = req.body;
+
+          const post = await this.models.Post.create(data);
+          console.log(post);
+          res.send(post);
         });
 
         this.server.get("*", (req, res) => this.handle(req, res));
@@ -45,7 +72,8 @@ class Server {
   start() {
     this.app
       .prepare()
-      .then(this.createRoutes)
+      .then(this.initializeMiddleware)
+      .then(this.initializeRoutes)
       .catch(ex => {
         console.error(ex.stack);
         process.exit(1);

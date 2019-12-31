@@ -1,29 +1,26 @@
 import Link from "next/link";
 import axios from "axios";
 
-const Index = props => {
+const Post = props => {
   return (
     <div>
       <Link href="/about">
         <a>About Page</a>
       </Link>
       <div>
-        {props.content.map(p => (
-          <p>{p.title}</p>
-        ))}
+        <p>{props.post.title}</p>
       </div>
     </div>
   );
 };
 
-Index.getInitialProps = async function() {
-  const res = await axios.get("http://localhost:3000/api/content");
-
-  console.log(res.data);
+Post.getInitialProps = async function(context) {
+  const { id } = context.query;
+  const res = await axios.get(`http://localhost:3000/api/posts/${id}`);
 
   return {
-    content: res.data
+    post: res.data
   };
 };
 
-export default Index;
+export default Post;
