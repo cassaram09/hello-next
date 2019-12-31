@@ -26,7 +26,19 @@
       "static/fVXWe0Fua1lopN1KXGqzz/pages/_error.js": 4,
       "static/fVXWe0Fua1lopN1KXGqzz/pages/about.js": 5,
       "static/fVXWe0Fua1lopN1KXGqzz/pages/index.js": 6,
-      "static/fVXWe0Fua1lopN1KXGqzz/pages/posts/[id].js": 7
+      "static/fVXWe0Fua1lopN1KXGqzz/pages/posts/[id].js": 7,
+      "static/aCu20rg1QOKw9so0VenT2/pages/_app.js": 8,
+      "static/aCu20rg1QOKw9so0VenT2/pages/_document.js": 9,
+      "static/aCu20rg1QOKw9so0VenT2/pages/_error.js": 10,
+      "static/aCu20rg1QOKw9so0VenT2/pages/about.js": 11,
+      "static/aCu20rg1QOKw9so0VenT2/pages/index.js": 12,
+      "static/aCu20rg1QOKw9so0VenT2/pages/posts/[id].js": 13,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/_app.js": 2,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/_document.js": 3,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/_error.js": 4,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/about.js": 5,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/index.js": 6,
+      "static/bzAyYSlrZfF9Ve3NOOkqv/pages/posts/[id].js": 7
     },
     "bySource": {},
     "usedIds": [
