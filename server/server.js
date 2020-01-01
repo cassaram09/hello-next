@@ -1,6 +1,8 @@
 const express = require("express");
 const next = require("next");
 const bodyParser = require("body-parser");
+const Auth = require("./auth");
+
 const env = process.env.NODE_ENV || "development";
 const dev = env !== "production";
 
@@ -41,7 +43,6 @@ class Server {
         });
 
         this.server.get("/api/posts/:id", async (req, res) => {
-          console.log(req.params);
           const post = await this.models.Post.findByPk(req.params.id);
           res.send(post);
         });
@@ -50,8 +51,41 @@ class Server {
           const data = req.body;
 
           const post = await this.models.Post.create(data);
-          console.log(post);
           res.send(post);
+        });
+
+        this.server.post("/api/users", async (req, res) => {
+          const auth = new Auth();
+          const password = await auth.hashPassword(req.body.password);
+          const user = await this.models.User.create({ ...req.body, password });
+          res.send(user);
+        });
+
+        this.server.get("/api/users", async (req, res) => {
+          const users = await this.models.User.findAll();
+          res.send(JSON.stringify(users));
+        });
+
+        this.server.post("/login", async (req, res) => {
+          let { email, password } = req.body;
+          const user = await new Auth(this.database).login({ email, password });
+
+          if (user) {
+            res.send(user);
+          } else {
+            res.status(false);
+          }
+        });
+
+        this.server.post("/protected", async (req, res) => {
+          let { email, password } = req.body;
+          const user = await new Auth(this.database).login({ email, password });
+
+          if (user) {
+            res.send(user);
+          } else {
+            res.status(false);
+          }
         });
 
         this.server.get("*", (req, res) => this.handle(req, res));
