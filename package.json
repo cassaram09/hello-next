@@ -7,7 +7,8 @@
     "start": "pm2 start ecosystem.config.js && pm2 logs",
     "build": "next build",
     "prod": "NODE_ENV=production pm2 ecosystem.config.js",
-    "stop": "pm2 stop ecosystem.config.js"
+    "stop": "pm2 stop ecosystem.config.js",
+    "db:migrate": "cd server/database && npx sequelize-cli db:migrate"
   },
   "keywords": [],
   "author": "",
@@ -19,8 +20,10 @@
     "cookie-parser": "^1.4.4",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "global": "^4.4.0",
     "isomorphic-unfetch": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
+    "moment": "^2.24.0",
     "next": "^9.1.6",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
@@ -32,6 +35,7 @@
     "react-cookie": "^4.0.3",
     "react-cookies": "^0.1.1",
     "react-dom": "^16.12.0",
+    "react-proptypes": "^1.0.0",
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",
     "tedious": "^6.6.5"

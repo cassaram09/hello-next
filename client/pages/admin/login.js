@@ -1,6 +1,7 @@
 import React from "react";
 import axios from "axios";
 import cookie from "react-cookies";
+import moment from "moment";
 
 class Login extends React.Component {
   constructor(props) {
@@ -15,8 +16,12 @@ class Login extends React.Component {
       });
 
       if (response.data.token) {
-        cookie.save("token", response.data.token, { path: "/" });
-        alert("logged in!");
+        cookie.save("token", response.data.token, {
+          path: "/",
+          expires: moment()
+            .add(24, "hours")
+            .toDate()
+        });
       }
     } catch (e) {
       console.log(e, "failed");

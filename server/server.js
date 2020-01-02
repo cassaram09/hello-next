@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const env = process.env.NODE_ENV || "development";
 const dev = env !== "production";
 const cookieParser = require("cookie-parser");
+const moment = require("moment");
 
 class Server {
   constructor({ database, httpPort, httpsPort }) {
@@ -20,13 +21,14 @@ class Server {
     this.initializeRoutes = this.initializeRoutes.bind(this);
     this.initializeMiddleware = this.initializeMiddleware.bind(this);
     this.start = this.start.bind(this);
+    this.isAuthenticated = this.isAuthenticated.bind(this);
 
     return this;
   }
   initializeMiddleware() {
     return new Promise(async (resolve, reject) => {
       try {
-        this.server.use(bodyParser.json()); // Prases incoming data as JSON
+        this.server.use(bodyParser.json());
         this.server.use(cookieParser());
         resolve();
       } catch (e) {
@@ -34,6 +36,23 @@ class Server {
         reject(e);
       }
     });
+  }
+
+  isAuthenticated(req, res, next) {
+    const tokenHttpOnly = req.cookies.tokenHttpOnly;
+    const token = req.cookies.token;
+
+    if (token && tokenHttpOnly) {
+      jwt.verify(tokenHttpOnly, this.secret, (error, decoded) => {
+        if (error) {
+          res.status(401).redirect("/");
+        } else {
+          next();
+        }
+      });
+    } else {
+      res.status(401).redirect("/");
+    }
   }
 
   initializeRoutes() {
@@ -69,15 +88,20 @@ class Server {
         });
 
         this.server.get("/admin/login", (req, res, next) => {
+          const tokenHttpOnly = req.cookies.tokenHttpOnly;
           const token = req.cookies.token;
 
-          jwt.verify(token, this.secret, (error, decoded) => {
-            if (error) {
-              next();
-            } else {
-              res.redirect("/protected");
-            }
-          });
+          if (token && tokenHttpOnly) {
+            jwt.verify(tokenHttpOnly, this.secret, (error, decoded) => {
+              if (error) {
+                return next();
+              } else {
+                return res.redirect("/");
+              }
+            });
+          }
+
+          next();
         });
 
         this.server.post("/login", async (req, res) => {
@@ -87,23 +111,38 @@ class Server {
           if (user) {
             const payload = user.get({ plain: true });
             const token = jwt.sign(payload, this.secret, { expiresIn: "24h" });
+            res.cookie("tokenHttpOnly", token, {
+              maxAge: 900000,
+              httpOnly: true
+            });
             res.send({ token, id: payload.id });
           } else {
             res.send({ error: "Incorrect email or password." });
           }
         });
 
-        this.server.get("/protected", async (req, res) => {
+        this.server.post("/logout", async (req, res) => {
+          const tokenHttpOnly = req.cookies.tokenHttpOnly;
           const token = req.cookies.token;
 
-          jwt.verify(token, this.secret, (error, decoded) => {
-            if (error) {
-              res.status(401).send({ error: "Not authorized." });
-            } else {
-              res.send("I am a protected route.");
-            }
-          });
+          if (token && tokenHttpOnly) {
+            res.cookie("tokenHttpOnly", "", {
+              maxAge: 900000,
+              httpOnly: true,
+              expires: moment().toDate()
+            });
+
+            return res.send({ success: true });
+          }
+
+          res.send({ success: false });
         });
+
+        this.server.get(
+          "/protected",
+          this.isAuthenticated,
+          (req, res, next) => next() //let next handle the route and render
+        );
 
         this.server.get("*", (req, res) => this.handle(req, res));
 
