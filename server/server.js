@@ -2,12 +2,14 @@ const express = require("express");
 const next = require("next");
 const bodyParser = require("body-parser");
 const Auth = require("./auth");
-
+const jwt = require("jsonwebtoken");
 const env = process.env.NODE_ENV || "development";
 const dev = env !== "production";
+const cookieParser = require("cookie-parser");
 
 class Server {
   constructor({ database, httpPort, httpsPort }) {
+    this.secret = process.env.JWT_SECRET;
     this.app = next({ dev, dir: dev ? "./client" : undefined });
     this.handle = this.app.getRequestHandler();
     this.database = database;
@@ -25,7 +27,7 @@ class Server {
     return new Promise(async (resolve, reject) => {
       try {
         this.server.use(bodyParser.json()); // Prases incoming data as JSON
-
+        this.server.use(cookieParser());
         resolve();
       } catch (e) {
         console.log(e);
@@ -66,26 +68,41 @@ class Server {
           res.send(JSON.stringify(users));
         });
 
+        this.server.get("/admin/login", (req, res, next) => {
+          const token = req.cookies.token;
+
+          jwt.verify(token, this.secret, (error, decoded) => {
+            if (error) {
+              next();
+            } else {
+              res.redirect("/protected");
+            }
+          });
+        });
+
         this.server.post("/login", async (req, res) => {
           let { email, password } = req.body;
           const user = await new Auth(this.database).login({ email, password });
 
           if (user) {
-            res.send(user);
+            const payload = user.get({ plain: true });
+            const token = jwt.sign(payload, this.secret, { expiresIn: "24h" });
+            res.send({ token, id: payload.id });
           } else {
-            res.status(false);
+            res.send({ error: "Incorrect email or password." });
           }
         });
 
-        this.server.post("/protected", async (req, res) => {
-          let { email, password } = req.body;
-          const user = await new Auth(this.database).login({ email, password });
+        this.server.get("/protected", async (req, res) => {
+          const token = req.cookies.token;
 
-          if (user) {
-            res.send(user);
-          } else {
-            res.status(false);
-          }
+          jwt.verify(token, this.secret, (error, decoded) => {
+            if (error) {
+              res.status(401).send({ error: "Not authorized." });
+            } else {
+              res.send("I am a protected route.");
+            }
+          });
         });
 
         this.server.get("*", (req, res) => this.handle(req, res));
