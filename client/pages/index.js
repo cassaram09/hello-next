@@ -1,5 +1,6 @@
 import Link from "next/link";
-
+import styles from "../styles/styles.scss";
+styles;
 const Index = props => {
   return (
     <div>
