@@ -8,6 +8,10 @@ const dev = env !== "production";
 const cookieParser = require("cookie-parser");
 const moment = require("moment");
 
+const Controller = require("./controllers/controller");
+const AdminController = require("./controllers/adminController");
+const UserController = require("./controllers/userController");
+
 class Server {
   constructor({ database, httpPort, httpsPort }) {
     this.secret = process.env.JWT_SECRET;
@@ -21,10 +25,14 @@ class Server {
     this.initializeRoutes = this.initializeRoutes.bind(this);
     this.initializeMiddleware = this.initializeMiddleware.bind(this);
     this.start = this.start.bind(this);
-    this.isAuthenticated = this.isAuthenticated.bind(this);
+
+    this.apiRoutes = this.apiRoutes.bind(this);
+    this.adminRoutes = this.adminRoutes.bind(this);
+    this.loginRoutes = this.loginRoutes.bind(this);
 
     return this;
   }
+
   initializeMiddleware() {
     return new Promise(async (resolve, reject) => {
       try {
@@ -38,112 +46,99 @@ class Server {
     });
   }
 
-  isAuthenticated(req, res, next) {
-    const tokenHttpOnly = req.cookies.tokenHttpOnly;
-    const token = req.cookies.token;
+  // isAuthenticated(req, res, next) {
+  //   const tokenHttpOnly = req.cookies.tokenHttpOnly;
+  //   const token = req.cookies.token;
 
-    if (token && tokenHttpOnly) {
-      jwt.verify(tokenHttpOnly, this.secret, (error, decoded) => {
-        if (error) {
-          res.status(401).redirect("/");
-        } else {
-          next();
-        }
-      });
-    } else {
-      res.status(401).redirect("/");
-    }
+  //   if (token && tokenHttpOnly) {
+  //     jwt.verify(tokenHttpOnly, this.secret, (error, decoded) => {
+  //       if (error) {
+  //         res.status(401).redirect("/");
+  //       } else {
+  //         next();
+  //       }
+  //     });
+  //   } else {
+  //     res.status(401).redirect("/");
+  //   }
+  // }
+
+  apiRoutes() {
+    Object.values(this.database.models).forEach(model => {
+      let routes;
+
+      if (model.name === "User") {
+        routes = new UserController({
+          name: model.name.toLowerCase() + "s",
+          model: model,
+          authenticate: true
+        }).routes;
+      } else {
+        routes = new Controller({
+          name: model.name.toLowerCase() + "s",
+          model: model,
+          authenticate: true
+        }).routes;
+      }
+      this.server.use("/api", routes);
+    });
+  }
+
+  adminRoutes() {
+    this.server.use(
+      "/admin",
+      new AdminController({
+        authenticate: true
+      }).routes
+    );
+  }
+
+  loginRoutes() {
+    this.server.post("/login", async (req, res) => {
+      let { email, password } = req.body;
+      const user = await new Auth(this.database).login({ email, password });
+
+      if (user) {
+        const plain = user.get({ plain: true });
+        const payload = { id: plain.id };
+
+        const token = jwt.sign(payload, this.secret, { expiresIn: "24h" });
+        res.cookie("tokenHttpOnly", token, {
+          maxAge: 900000,
+          httpOnly: true
+        });
+        res.send({ token, id: payload.id });
+      } else {
+        res.send({ error: "Incorrect email or password." });
+      }
+    });
+
+    this.server.post("/logout", async (req, res) => {
+      const tokenHttpOnly = req.cookies.tokenHttpOnly;
+      const token = req.cookies.token;
+
+      if (token && tokenHttpOnly) {
+        res.cookie("tokenHttpOnly", "", {
+          maxAge: 900000,
+          httpOnly: true,
+          expires: moment().toDate()
+        });
+
+        return res.send({ success: true });
+      }
+
+      res.send({ success: false });
+    });
   }
 
   initializeRoutes() {
     return new Promise(async (resolve, reject) => {
       try {
-        this.server.get("/api/posts", async (req, res) => {
-          const posts = await this.models.Post.findAll();
-          res.send(JSON.stringify(posts));
-        });
+        this.apiRoutes();
+        this.adminRoutes();
+        this.loginRoutes();
 
-        this.server.get("/api/posts/:id", async (req, res) => {
-          const post = await this.models.Post.findByPk(req.params.id);
-          res.send(post);
-        });
-
-        this.server.post("/api/posts", async (req, res) => {
-          const data = req.body;
-
-          const post = await this.models.Post.create(data);
-          res.send(post);
-        });
-
-        this.server.post("/api/users", async (req, res) => {
-          const auth = new Auth();
-          const password = await auth.hashPassword(req.body.password);
-          const user = await this.models.User.create({ ...req.body, password });
-          res.send(user);
-        });
-
-        this.server.get("/api/users", async (req, res) => {
-          const users = await this.models.User.findAll();
-          res.send(JSON.stringify(users));
-        });
-
-        this.server.get("/admin/login", (req, res, next) => {
-          const tokenHttpOnly = req.cookies.tokenHttpOnly;
-          const token = req.cookies.token;
-
-          if (token && tokenHttpOnly) {
-            jwt.verify(tokenHttpOnly, this.secret, (error, decoded) => {
-              if (error) {
-                return next();
-              } else {
-                return res.redirect("/");
-              }
-            });
-          }
-
-          next();
-        });
-
-        this.server.post("/login", async (req, res) => {
-          let { email, password } = req.body;
-          const user = await new Auth(this.database).login({ email, password });
-
-          if (user) {
-            const payload = user.get({ plain: true });
-            const token = jwt.sign(payload, this.secret, { expiresIn: "24h" });
-            res.cookie("tokenHttpOnly", token, {
-              maxAge: 900000,
-              httpOnly: true
-            });
-            res.send({ token, id: payload.id });
-          } else {
-            res.send({ error: "Incorrect email or password." });
-          }
-        });
-
-        this.server.post("/logout", async (req, res) => {
-          const tokenHttpOnly = req.cookies.tokenHttpOnly;
-          const token = req.cookies.token;
-
-          if (token && tokenHttpOnly) {
-            res.cookie("tokenHttpOnly", "", {
-              maxAge: 900000,
-              httpOnly: true,
-              expires: moment().toDate()
-            });
-
-            return res.send({ success: true });
-          }
-
-          res.send({ success: false });
-        });
-
-        this.server.get(
-          "/protected",
-          this.isAuthenticated,
-          (req, res, next) => next() //let next handle the route and render
-        );
-
+        //catch all - let NextJS handle the request
         this.server.get("*", (req, res) => this.handle(req, res));
 
         this.server.listen(3000, err => {
