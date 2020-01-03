@@ -24,11 +24,17 @@ const Posts = props => {
 };
 
 Posts.getInitialProps = async function(context) {
-  const res = await axios.get(`http://localhost:3000/api/posts`);
+  try {
+    const res = await axios.get(`http://localhost:3000/api/posts`);
 
-  return {
-    posts: res.data
-  };
+    return {
+      posts: res.data
+    };
+  } catch (e) {
+    return {
+      posts: []
+    };
+  }
 };
 
 export default Posts;

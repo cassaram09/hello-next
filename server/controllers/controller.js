@@ -47,7 +47,7 @@ class Controller {
         }
       });
     } else {
-      res.status(401).redirect("/");
+      res.status(401).send({ error: "Not authorized" });
     }
   }
 

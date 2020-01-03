@@ -1,26 +1,17 @@
 import React from "react";
 import App from "next/app";
 import Layout from "../components/layout";
+import { PageTransition } from "next-page-transitions";
+import styles from "../styles/styles.scss";
+styles;
 class MyApp extends App {
-  static async getInitialProps(context) {
-    const appProps = await App.getInitialProps(context);
-
-    const tokenHttpOnly = context.ctx.req.cookies.tokenHttpOnly;
-    const token = context.ctx.req.cookies.token;
-
-    if (token && tokenHttpOnly) {
-      appProps.loggedIn = true;
-    }
-
-    return appProps;
-  }
-
   render() {
-    const { Component, pageProps, loggedIn } = this.props;
-    const _props = { ...pageProps, loggedIn };
+    const { Component, pageProps } = this.props;
     return (
-      <Layout {..._props}>
-        <Component {..._props}></Component>
+      <Layout {...pageProps}>
+        <PageTransition timeout={300} classNames="page-transition">
+          <Component {...pageProps}></Component>
+        </PageTransition>
       </Layout>
     );
   }

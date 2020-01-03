@@ -76,8 +76,7 @@ class Server {
       } else {
         routes = new Controller({
           name: model.name.toLowerCase() + "s",
-          model: model,
-          authenticate: true
+          model: model
         }).routes;
       }
       this.server.use("/api", routes);
